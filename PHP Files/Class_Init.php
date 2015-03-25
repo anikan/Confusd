@@ -11,7 +11,7 @@ mysql_query(
 id INT NOT NULL AUTO_INCREMENT,
 PRIMARY KEY(id),
 className VARCHAR(30),
-threshold VARCHAR(30),
+threshold INT,
 keywords VARCHAR(100))") or die(mysql_error());
 mysql_close($link);
 ?>

@@ -11,14 +11,11 @@
 	
 */
 
-
-/* Change db and connect values if using online */
 $className=$_POST['className'];
 $threshold=$_POST['threshold'];
 $keywords=$_POST['keywords'];
-
 $db="newdb";
-$link = mysql_connect('localhost', 'root' , '');
+$link = mysql_connect("localhost", "root", "");
 if (! $link) die(mysql_error());
 mysql_select_db($db , $link) or die("Select Error: ".mysql_error());
 $result=mysql_query(
@@ -34,8 +31,6 @@ keywords) VALUES (
 
 $result=mysql_query(
 //The table specific to the class.
-//"CREATE TABLE potato (
-
 "CREATE TABLE `" . $className . "` (
 id INT NOT NULL AUTO_INCREMENT,
 PRIMARY KEY(id),
@@ -61,8 +56,8 @@ mysql_close($link);
 print "Record added\n";
 ?>
 
-<form method="POST" action="bday_insert_form.php">
-<input type="submit" value="Insert Another Record">
+<form method="POST" action="New_Class_Form.php">
+<input type="submit" value="Create Another Class">
 </form>
 <br>
 
