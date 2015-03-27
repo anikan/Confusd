@@ -1,9 +1,9 @@
 <html>
 <head><title>
 	<?php 
+	//Handle refreshing, deleting old elements, graphs. deleting class.
 	
-	//This file is the standard page a student will look at, the button, and
-	//keyword checkboxes.
+	//This file is the standard page a teacher will look at.
 	$className = $_POST['className'];
 	echo $className; ?> 
 </title>
@@ -137,19 +137,20 @@ input[type="submit"] {
 </head>
 <body>
 
+<!--
 <button id="homeButton" class="float-right submit-button" ><img src="back.png"></button>
 <script type="text/javascript">
     document.getElementById("homeButton").onclick = function () {
         location.href = "Main_Page.php";
     };
 </script>
-
+-->
 
 <div style="text-align:center">
 
 <?php echo $className ?>
 
-<form method="POST" action="Button_Push.php">
+<form method="POST" action="Standard_Teacher_Class.php">
 <pre>
 <?php
 
@@ -160,8 +161,27 @@ $link = mysql_connect('localhost', 'root', '');
 if (! $link) die(mysql_error());
 mysql_select_db($db , $link) or die("Couldn't open $db: ".mysql_error());
 
-//Grabs the keywords string for this class.
+//Delete old entries.
+$result = mysql_query("DELETE FROM'". $className ."'  WHERE `time` < (NOW() - INTERVAL '".$buttonDelayMins."' MINUTE");
+
+//Grabs the threshold for this class.
 $result = mysql_query( "SELECT keywords FROM classes WHERE className = '".$className. "'")
+		  or die("SELECT Error: ".mysql_error());
+
+$threshold= mysql_fetch_row($result);
+
+//Grabs the confused students data for this class.
+$result = mysql_query( "SELECT * FROM'".$className"'")
+		  or die("SELECT Error: ".mysql_error());
+		  
+$num_rows = mysql_num_rows($result);
+
+echo "'".$num_rows."' students confused."
+echo "'".$threshold ."' is threshold."
+
+/*
+//Grabs the keywords string for this class.
+$resultKeywords = mysql_query( "SELECT keywords FROM classes WHERE className = '".$className. "'")
 		  or die("SELECT Error: ".mysql_error());
 $num_rows = mysql_num_rows($result);
 
@@ -185,7 +205,8 @@ foreach($keywordArray as $value)
 		echo '<label for="box"></label>'.$value;
 	echo '</div>';
 	*/
-	echo '<input type="checkbox" name='.$value. ' value="1">'.$value;
+	
+	/*echo '<input type="checkbox" name='.$value. ' value="1">'.$value;
 	
 	echo '<br>';
 }
@@ -206,6 +227,8 @@ else if($_POST["successful"] == "0")
 }
 
 //If it is empty, then this is the first visit.
+mysql_query("DELETE FROM'". $Class. "'WHERE time < (NOW() - INTERVAL 10 MINUTE))";
+*/
 
 ?>
 
