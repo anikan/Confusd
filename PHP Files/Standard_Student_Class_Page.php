@@ -177,32 +177,37 @@ $keywordArray = explode(",", $keywordString);
 echo '<input type="hidden" name="className" value="'.$className.'">';
 
 //Add all of the keywords as separate checkboxes.
-foreach($keywordArray as $value)
+if (!($keywordArray[0] == ''))
 {
+	foreach($keywordArray as $value)
+	{
 
 	/*echo '<div class="box">';
 		echo '<input type="checkbox" value="1" id="box" name="' .$value. '"/>';
 		echo '<label for="box"></label>'.$value;
 	echo '</div>';
 	*/
-	echo '<input type="checkbox" name='.$value. ' value="1">'.$value;
+		echo '<input type="checkbox" name='.$value. ' value="1">'.$value;
 	
-	echo '<br>';
+		echo '<br>';
+	}
 }
 
 mysql_close($link);
-
-if ($_POST["successful"] == "1")
+if (isset($_POST["successful"]))
 {
-	echo 'Submitted, please wait '. $buttonDelayMins . ' minutes before submitting again.';
-}
+	if ($_POST["successful"] == "1")
+	{
+		echo 'Submitted, please wait '. $buttonDelayMins . ' minutes before submitting again.';
+	}
 
-//Already submitted, failed.
-else if($_POST["successful"] == "0")
-{
-	$timeRemaining = ($buttonDelayMins - ((time() - $_POST["time"]) / 60))	;
-	//$timeRemaining = (5 - ((time() - 5) / 60))	;
-	echo 'Please wait ' . $timeRemaining . ' minutes'; 
+	//Already submitted, failed.
+	else if($_POST["successful"] == "0")
+	{
+		$timeRemaining = ($buttonDelayMins - ((time() - $_POST["submitTime"]) / 60))	;
+		//$timeRemaining = (5 - ((time() - 5) / 60))	;
+		echo 'Please wait ' . $timeRemaining . ' minutes'; 
+	}
 }
 
 //If it is empty, then this is the first visit.

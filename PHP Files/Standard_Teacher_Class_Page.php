@@ -134,6 +134,8 @@ input[type="submit"] {
 }
 </style>
 
+<script type="text/javascript" src='chart.min.js'></script>
+
 </head>
 <body>
 
@@ -148,13 +150,12 @@ input[type="submit"] {
 
 <div style="text-align:center">
 
-<?php echo $className ?>
-
-<form method="POST" action="Standard_Teacher_Class.php">
-<pre>
-<?php
+<?php 
+echo $className . "<br>";
 
 $buttonDelayMins = 5;
+$refreshDelay = 30000; //30 seconds
+
 $db="newdb";
 $link = mysql_connect('localhost', 'root', '');
 
@@ -162,79 +163,176 @@ if (! $link) die(mysql_error());
 mysql_select_db($db , $link) or die("Couldn't open $db: ".mysql_error());
 
 //Delete old entries.
-$result = mysql_query("DELETE FROM'". $className ."'  WHERE `time` < (NOW() - INTERVAL '".$buttonDelayMins."' MINUTE");
+$result = mysql_query("DELETE FROM `". $className ."` WHERE `time` < (".(time() - $buttonDelayMins * 60). ")");
 
 //Grabs the threshold for this class.
-$result = mysql_query( "SELECT keywords FROM classes WHERE className = '".$className. "'")
+$result = mysql_query( "SELECT threshold FROM `classes` WHERE className = '".$className. "'")
 		  or die("SELECT Error: ".mysql_error());
 
 $threshold= mysql_fetch_row($result);
 
-//Grabs the confused students data for this class.
-$result = mysql_query( "SELECT * FROM'".$className"'")
-		  or die("SELECT Error: ".mysql_error());
-		  
+//Grabs the keywords for this class.
+$result = mysql_query( "SELECT * FROM `".$className ."`")
+		  or die("SELECT Error: ".mysql_error()); 
+		 
 $num_rows = mysql_num_rows($result);
 
-echo "'".$num_rows."' students confused."
-echo "'".$threshold ."' is threshold."
+$confusedRatio = (intval($num_rows)/intval($threshold[0]));
 
-/*
-//Grabs the keywords string for this class.
-$resultKeywords = mysql_query( "SELECT keywords FROM classes WHERE className = '".$className. "'")
-		  or die("SELECT Error: ".mysql_error());
-$num_rows = mysql_num_rows($result);
-
-$keywords = str_replace(' ', '', mysql_fetch_row($result));
-
-//The string comes as an array so we first convert it to an string. So that we can split it the way we want.	
-$keywordString = implode($keywords);
-
-//splits the string into its components.
-$keywordArray = explode(",", $keywordString);
-
-//Allows the button to know which class to add this entry to.
-echo '<input type="hidden" name="className" value="'.$className.'">';
-
-//Add all of the keywords as separate checkboxes.
-foreach($keywordArray as $value)
+if ($confusedRatio >= 1)
 {
-
-	/*echo '<div class="box">';
-		echo '<input type="checkbox" value="1" id="box" name="' .$value. '"/>';
-		echo '<label for="box"></label>'.$value;
-	echo '</div>';
-	*/
+	$refreshDelay = 180000;
 	
-	/*echo '<input type="checkbox" name='.$value. ' value="1">'.$value;
+	?>
+	<audio id="audiotag1" src="confused.wav" preload="auto"></audio>
+	<script type="text/javascript">
+		document.getElementById('audiotag1').play();
+</script>
+
 	
-	echo '<br>';
+<?php
+
+	//For the colors, setting it to 1.
+	$confusedRatio = 1;
 }
 
-mysql_close($link);
+	/*
+	$Green = 0x288028;
+	$Red = 0xA03333;
+	
+	$redA = $Green & 0xFF0000;
+	$greenA = $Green & 0x00FF00;
+	$blueA = $Green & 0x0000FF;
+	$redB = $Red & 0xFF0000;
+	$greenB = $Red & 0x00FF00;
+	$blueB = $Red & 0x0000FF;
 
-if ($_POST["successful"] == "1")
-{
-	echo 'Submitted, please wait '. $buttonDelayMins . ' minutes before submitting again.';
-}
-
-//Already submitted, failed.
-else if($_POST["successful"] == "0")
-{
-	$timeRemaining = ($buttonDelayMins - ((time() - $_POST["time"]) / 60))	;
-	//$timeRemaining = (5 - ((time() - 5) / 60))	;
-	echo 'Please wait ' . $timeRemaining . ' minutes'; 
-}
-
-//If it is empty, then this is the first visit.
-mysql_query("DELETE FROM'". $Class. "'WHERE time < (NOW() - INTERVAL 10 MINUTE))";
+	$redC = $redA + (($redB - $redA) * $confusedRatio) & 0xFF0000;
+	$greenC = $greenA + (($greenB - $greenA) * $confusedRatio) & 0x00FF00;
+	$blueC = $blueA + (($blueB - $blueA) * $confusedRatio) & 0x0000FF;
+	
+	$color = $redC | $greenC | $blueC;
 */
+?>
+
+<style>
+	background-color: #<?php echo $color?>
+</style>
+
+
+<?php
+//Grabs the keywords for this class.
+$result = mysql_query( "SELECT keywords FROM `classes` WHERE className = '".$className. "'")
+		  or die("SELECT Error: ".mysql_error()); 
+
+echo $num_rows." students confused. <br>";
+echo $threshold[0] ." is threshold. <br>";
+
+$keywords = mysql_fetch_row($result);
+
+if (!($keywords[0] == ''))
+{
+	$keywordsString = str_replace(' ', '', $keywords);
+
+	//The string comes as an array so we first convert it to an string. So that we can split it the way we want.	
+	$keywordString = implode($keywordsString);
+
+	//splits the string into its components.
+	$keywordArray = explode(",", $keywordString);
+	
+	$keywordString = ("'" . $keywordString);
+
+	$keywordString = str_replace(",", "', '", $keywordString);
+
+	$keywordString .= "'";
+
+	//If there are keywords, then draw a bar graph..
+	//$result = mysql_query( "SELECT * FROM`".$className."`")
+	//	  or die("SELECT Error: ".mysql_error());
+	?>
+	
+	<canvas id="myChart" width="400" height="400"></canvas>
+
+	<script type="text/javascript">
+	// Get the context of the canvas element we want to select
+	var ctx = document.getElementById("myChart").getContext("2d");
+
+	var data = {
+		labels: [<?php echo $keywordString?>],
+		datasets: 
+		[
+			{
+				label: "Student data",
+				fillColor: "rgba(151,187,205,0.5)",
+				strokeColor: "rgba(151,187,205,0.8)",
+				highlightFill: "rgba(151,187,205,0.75)",
+				highlightStroke: "rgba(151,187,205,1)",
+				data: [<?php
+				$dataQuery='';
+				
+				foreach($keywordArray as $value)
+				{
+					//Grabs the confused students data for this class.
+					$result = mysql_query( "SELECT id FROM`".$className."` WHERE " .$value ." = 1")
+					or die("SELECT Error: ".mysql_error());
+			  
+					$num_rows = mysql_num_rows($result);
+					$dataQuery .= $num_rows. ", ";
+				}
+				
+					$dataQuery = substr($dataQuery, 0, -2); //Removes very last comma.
+					echo $dataQuery;
+				
+				?>]
+			},
+		]
+	};
+
+	var myBarChart = new Chart(ctx).Bar(data);
+	
+	</script>
+	<?php
+}
+
+echo ("<form method=POST action=Standard_Teacher_Class_Page.php id=backToPage>
+<input type=hidden name=className value='". $className."'> </form>");
 
 ?>
 
-<input type="submit" name="submit" value="I'm Confused." id="submit">
-</pre>
+<!--Blank target opens new tab for deleting. For closing tab.-->
+<form method=POST action=Delete_Class.php id=deleteClassTab target="_blank">
+<input type=hidden name=className value="<?php echo $className?>">
 </form>
+
+<!--Changes to delete page, showing thanks for using Confusd. -->
+<form method=POST action=Delete_Class.php id=deleteClassButton>
+<input type=hidden name=className value="<?php echo $className?>">
+<input type=submit name=submit value="End Class." id=submit>
+</form>
+
+<script type="text/javascript">
+	var needToDelete = true;
+	setTimeout(function(){
+		needToUnload = false;
+        document.getElementById('backToPage').submit(); // SUBMIT FORM
+      
+	  }, <?php echo $refreshDelay?>);
+
+  /*timeoutID = window.setTimeout(refresh, <?php echo $refreshDelay?>);
+  
+  function refresh()
+	      document.getElementById('samePage').submit(); // SUBMIT FORM
+  }*/
+  
+	window.onbeforeunload=function(e){
+		
+		if (needToDelete)
+		{
+			document.getElementById('deleteClassTab').submit(); // SUBMIT FORM
+		}		
+	}; // no return string --> user will leave as normal but data is send to server
+</script>
+
 </div>
 
 </body>

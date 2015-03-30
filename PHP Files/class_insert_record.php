@@ -67,7 +67,7 @@ $className=$_POST['className'];
 $threshold=$_POST['threshold'];
 $keywords=$_POST['keywords'];
 $db="newdb";
-$link = mysql_connect("localhost", "root", "");
+$link = mysql_connect('localhost', 'root', '');
 if (! $link) die(mysql_error());
 mysql_select_db($db , $link) or die("Select Error: ".mysql_error());
 $result=mysql_query(
@@ -96,11 +96,14 @@ $keywords = str_replace(' ', '', $keywords);
 $keywordArray = explode(",", $keywords);
 
 //Add all of the keywords as separate columns.
-foreach($keywordArray as $value)
+if (!($keywordArray[0] == ''))
 {
-	$result=mysql_query(
+	foreach($keywordArray as $value)
+	{
+		$result=mysql_query(
 	
-	"ALTER TABLE `" . $className . "` ADD `" . $value . "` BIT") or die(mysql_error());
+		"ALTER TABLE `" . $className . "` ADD `" . $value . "` BIT") or die(mysql_error());
+	}
 }
 
 mysql_close($link);
@@ -109,7 +112,7 @@ mysql_close($link);
 
 echo ('<form method="POST" action="Standard_Teacher_Class_Page.php" id="nextPage">
 	<input type="hidden" name="className" value="'.$className.'">
-	echo </form>');
+	</form>');
 
 ?>
 

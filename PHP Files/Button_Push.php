@@ -69,21 +69,20 @@ if (! $link) die(mysql_error());
 mysql_select_db($db , $link) or die("Couldn't open $db: ".mysql_error());
 
 //Check if the user didn't already push the button.
-file_put_contents ( "C:\indigoampp\apache-2.2.15\htdocs\somethingWrong", "SELECT time FROM '".$className. "'  WHERE ipAdd = '".$_SERVER['REMOTE_ADDR']. "'");
 $result = mysql_query( "SELECT time FROM `".$className. "`  WHERE ipAdd = '".$_SERVER['REMOTE_ADDR']. "'")
 		  or die("SELECT Error: ".mysql_error());
 	
 //If not empty, then post back to standard page without inserting.	
 if (mysql_num_rows($result))
 {
+	$time = mysql_fetch_row($result);
+	
 	echo ("<form method=POST action=Standard_Student_Class_Page.php id=backToPage>
 	<pre>
-	<input type=hidden name=submitTime value='".mysql_fetch_row($result)."'>
+	<input type=hidden name=submitTime value='".$time[0]."'>
 	<input type=hidden name=className value='".$className."'>
 	<input type=hidden name=successful value=0>
 	</form>");
-	
-	file_put_contents ( "C:\indigoampp\apache-2.2.15\htdocs\somethingWrong", "No dupes", FILE_APPEND); 
 }
 
 //If not then insert stuff and set up the form.
@@ -103,41 +102,44 @@ else
 	//splits the string into its components.
 	$keywordArray = explode(",", $keywordString);
 
-
 	//We build up the query piece by piece, because the keywords have to be handled.
-	$Query = "INSERT INTO `". strtolower($className). "`(";
+	$Query = "INSERT INTO `". $className. "`(";
 
 	$Query.= "`time`,`ipAdd`,";
 
 	//Add all of the keywords as separate columns.
-	foreach($keywordArray as $value)
+	if (!($keywordArray[0] == ''))
 	{
-		$Query.="`".$value . "`,";
+		foreach($keywordArray as $value)
+		{
+			$Query.="`".$value . "`,";
+		}
 	}
 	$Query = substr($Query, 0, -1); //Removes very last comma.
 
 	$Query.=") VALUES ('".time()."','".$_SERVER['REMOTE_ADDR']."',";
 
 	//Add whether 1 or 0 for checkboxes.
-	foreach($keywordArray as $value)
+	if (!($keywordArray[0] == ''))
 	{
-		//If on
-		if ($_POST[$value] == "1")
+		foreach($keywordArray as $value)
 		{
-			$Query.= "1,";
-		}
 		
-		//If off
-		else
-		{
-			$Query.="0,";
+			//If off
+			if (!(isset($_POST[$value])))
+			{
+				$Query .= "0,";
+			}
 			
+			//If on
+			else
+			{
+				$Query.= "1,";
+			}
 		}
 	}
 	$Query = substr($Query, 0, -1); //Removes very last comma.
 	$Query .= ")";
-
-	file_put_contents ( "C:\indigoampp\apache-2.2.15\htdocs\somethingWrong", $Query, FILE_APPEND); 
 
 	$result=mysql_query($Query) or die("Insert Error: ".mysql_error());
 	mysql_close($link);
